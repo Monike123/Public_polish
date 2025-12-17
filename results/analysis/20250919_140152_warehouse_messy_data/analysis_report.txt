@@ -1,0 +1,65 @@
+DATASET ANALYSIS REPORT
+============================================================
+
+Dataset Shape: (1000, 10)
+Total Missing Values: 0
+Duplicate Rows: 0
+
+COLUMN DETAILS:
+----------------------------------------
+
+Product ID (int64):
+  Non-null: 1000
+  Unique: 615
+  Count: 1000
+  Mean: 1503.929
+  Std: 289.99810837635107
+  Min/Q1/Median/Q3/Max: 1000.0/1242.75/1505.0/1757.25/1998.0
+
+Product Name (object):
+  Non-null: 1000
+  Unique: 6
+  Top values: {' gadget y ': 177, ' widget a ': 176, ' widget c ': 175, ' widget b ': 170, ' gadget z ': 169, ' gadget x ': 133}
+
+Category (object):
+  Non-null: 1000
+  Unique: 4
+  Top values: {'FURNITURE': 265, 'CLOTHING': 257, 'ELECTRONICS': 248, 'TOYS': 230}
+
+Warehouse (object):
+  Non-null: 1000
+  Unique: 3
+  Top values: {'Warehouse 1': 349, 'Warehouse 2': 332, 'Warehouse 3': 319}
+
+Location (object):
+  Non-null: 1000
+  Unique: 5
+  Top values: {'Aisle 3': 211, 'Aisle 1': 210, 'Aisle 4': 199, 'Aisle 5': 199, 'Aisle 2': 181}
+
+Quantity (object):
+  Non-null: 1000
+  Unique: 5
+  Top values: {'300': 335, '150': 175, '50': 169, '100': 161, 'two hundred': 160}
+
+Price (float64):
+  Non-null: 1000
+  Unique: 4
+  Count: 1000
+  Mean: 28.48
+  Std: 13.09929354932897
+  Min/Q1/Median/Q3/Max: 9.99/19.99/29.99/29.99/49.99
+
+Supplier (object):
+  Non-null: 1000
+  Unique: 4
+  Top values: {'Supplier B': 288, 'Supplier A': 244, 'Supplier D': 236, 'Supplier C': 232}
+
+Status (object):
+  Non-null: 1000
+  Unique: 3
+  Top values: {'In Stock': 340, 'Out of Stock': 332, 'Low Stock': 328}
+
+Last Restocked (object):
+  Non-null: 1000
+  Unique: 4
+  Top values: {'20/12/2022': 418, '15/01/2023': 199, '25/04/2023': 192, '05/03/2023': 191}

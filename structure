@@ -1,0 +1,17 @@
+your_project/
+├── app.py                    # Main Flask application
+├── analysis.py              # Updated analysis module  
+├── data_cleaning.py          # Your existing cleaning functions
+├── Data_load.py              # Your existing data loading functions
+├── requirements.txt          # Python dependencies
+├── templates/
+│   └── index.html           # Main web interface
+├── static/
+│   ├── css/
+│   │   └── style.css        # Styling
+│   └── js/
+│       └── script.js        # JavaScript functionality
+└── dataset/
+    ├── dataset_by_user/     # User uploaded datasets
+    ├── public_dataset1.csv   # Your provided datasets
+    └── public_dataset2.xlsx  # More public datasets

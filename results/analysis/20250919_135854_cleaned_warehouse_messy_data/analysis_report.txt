@@ -1,0 +1,68 @@
+DATASET ANALYSIS REPORT
+============================================================
+
+Dataset Shape: (1000, 10)
+Total Missing Values: 0
+Duplicate Rows: 0
+
+COLUMN DETAILS:
+----------------------------------------
+
+Product ID (int64):
+  Non-null: 1000
+  Unique: 615
+  Count: 1000
+  Mean: 1503.929
+  Std: 289.99810837635107
+  Min/Q1/Median/Q3/Max: 1000.0/1242.75/1505.0/1757.25/1998.0
+
+Product Name (object):
+  Non-null: 1000
+  Unique: 6
+  Top values: {'Gadget Y': 177, 'Widget A': 176, 'Widget C': 175, 'Widget B': 170, 'Gadget Z': 169, 'Gadget X': 133}
+
+Category (object):
+  Non-null: 1000
+  Unique: 4
+  Top values: {'Furniture': 265, 'Clothing': 257, 'Electronics': 248, 'Toys': 230}
+
+Warehouse (object):
+  Non-null: 1000
+  Unique: 3
+  Top values: {'Warehouse 1': 349, 'Warehouse 2': 332, 'Warehouse 3': 319}
+
+Location (object):
+  Non-null: 1000
+  Unique: 5
+  Top values: {'Aisle 3': 211, 'Aisle 1': 210, 'Aisle 4': 199, 'Aisle 5': 199, 'Aisle 2': 181}
+
+Quantity (float64):
+  Non-null: 1000
+  Unique: 6
+  Count: 1000
+  Mean: 161.40142517814726
+  Std: 79.82429602900555
+  Min/Q1/Median/Q3/Max: 50.0/100.0/150.0/200.0/300.0
+
+Price (float64):
+  Non-null: 1000
+  Unique: 5
+  Count: 1000
+  Mean: 28.08583858764187
+  Std: 13.07653287302558
+  Min/Q1/Median/Q3/Max: 9.99/19.99/28.08583858764187/29.99/49.99
+
+Supplier (object):
+  Non-null: 1000
+  Unique: 4
+  Top values: {'Supplier B': 288, 'Supplier A': 244, 'Supplier D': 236, 'Supplier C': 232}
+
+Status (object):
+  Non-null: 1000
+  Unique: 3
+  Top values: {'In Stock': 340, 'Out of Stock': 332, 'Low Stock': 328}
+
+Last Restocked (object):
+  Non-null: 1000
+  Unique: 5
+  Top values: {'2022-12-20 00:00:00.000000': 218, '2024-06-17 12:40:01.374181': 200, '2023-01-15 00:00:00.000000': 199, '2023-04-25 00:00:00.000000': 192, '2023-03-05 00:00:00.000000': 191}

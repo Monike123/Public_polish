@@ -1,0 +1,65 @@
+DATASET ANALYSIS REPORT
+============================================================
+
+Dataset Shape: (1000, 10)
+Total Missing Values: 0
+Duplicate Rows: 0
+
+COLUMN DETAILS:
+----------------------------------------
+
+Name (object):
+  Non-null: 1000
+  Unique: 10
+  Top values: {'alice': 118, 'charlie': 110, 'jack': 107, 'eve': 107, 'hannah': 100, 'frank': 96, 'david': 94, 'grace': 94, 'ivy': 91, 'bob': 83}
+
+Age (int64):
+  Non-null: 1000
+  Unique: 6
+  Count: 1000
+  Mean: 30.11
+  Std: 15.266662076923394
+  Min/Q1/Median/Q3/Max: 0.0/25.0/30.0/40.0/50.0
+
+Salary (float64):
+  Non-null: 1000
+  Unique: 6
+  Count: 1000
+  Mean: 60216.08643457383
+  Std: 6504.106998629892
+  Min/Q1/Median/Q3/Max: 50000.0/55000.0/60216.08643457383/65000.0/70000.0
+
+Gender (object):
+  Non-null: 1000
+  Unique: 3
+  Top values: {'Male': 355, 'Other': 332, 'Female': 313}
+
+Department (object):
+  Non-null: 1000
+  Unique: 5
+  Top values: {'Finance': 218, 'Sales': 202, 'HR': 200, 'IT': 193, 'Marketing': 187}
+
+Position (object):
+  Non-null: 1000
+  Unique: 5
+  Top values: {'Assistant': 214, 'Director': 204, 'Clerk': 202, 'Analyst': 194, 'Manager': 186}
+
+Joining Date (object):
+  Non-null: 1000
+  Unique: 1
+  Top values: {'2018-04-05': 1000}
+
+Performance Score (object):
+  Non-null: 1000
+  Unique: 5
+  Top values: {'B': 225, 'F': 201, 'C': 192, 'A': 192, 'D': 190}
+
+Email (object):
+  Non-null: 1000
+  Unique: 4
+  Top values: {'no_email@example.com': 390, 'user@domain.com': 213, 'email@example.com': 208, 'name@company.org': 189}
+
+Phone Number (object):
+  Non-null: 1000
+  Unique: 4
+  Top values: {'123-456-7890': 427, '098-765-4321': 199, '555-555-5555': 189, '000-000-0000': 185}
