@@ -490,6 +490,16 @@ def analyze_df(df, out_dir_path):
         if col in numeric_cols:
             stats_res = compute_numeric_stats(df[col])
             col_data.update(stats_res)
+            # Add full describe() for chat/detailed view
+            try:
+                desc = df[col].describe().to_dict()
+                col_data['describe'] = desc
+            except: pass
+            
+            if stats_res.get('missing', 0) == 0 and stats_res.get('std', 0) == 0:
+                 analysis_info['column_alerts'].append({
+                    'column': col, 'type': 'warning', 'msg': 'Zero variance'
+                })
             # Check skew
             if abs(stats_res.get('skew', 0) or 0) > 2:
                  analysis_info['column_alerts'].append({
@@ -498,6 +508,11 @@ def analyze_df(df, out_dir_path):
         elif col in categorical_cols:
             stats_res = compute_categorical_stats(df[col])
             col_data.update(stats_res)
+            try:
+                desc = df[col].astype(str).describe().to_dict()
+                col_data['describe'] = desc
+            except: pass
+
             if stats_res.get('unique', 0) > 50:
                  analysis_info['column_alerts'].append({
                     'column': col, 'type': 'info', 'msg': f"High cardinality ({stats_res['unique']} unique)"

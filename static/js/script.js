@@ -107,6 +107,9 @@ function processPublicDataset(filename) {
 }
 
 function showResults(data) {
+    // Store data globally for Chat
+    window.currentDatasetAnalysis = data;
+
     const container = document.getElementById('resultsSection');
     if (!container) return;
 
@@ -206,26 +209,35 @@ function renderAIInsights(data) {
 
     html += `
             </div>
-            <!-- Right: Chat Interface (Mock) -->
+            <!-- Right: Chat Interface -->
             <div class="col-lg-4">
-                <div class="card h-100 border-0 shadow-sm bg-light">
-                    <div class="card-header bg-white border-0 py-3">
-                        <h6 class="mb-0"><i class="fas fa-comments me-2"></i>Ask about your data</h6>
+                <div class="card h-100 border-0 shadow-sm bg-light chat-card">
+                    <div class="card-header bg-white border-bottom-0 py-3 d-flex align-items-center">
+                        <div class="bg-primary text-white rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:32px;height:32px;">
+                            <i class="fas fa-robot fa-sm"></i>
+                        </div>
+                        <h6 class="mb-0 fw-bold">Data Assistant</h6>
                     </div>
-                    <div class="card-body d-flex flex-column" style="height: 400px;">
-                        <div class="chat-history flex-grow-1 overflow-auto mb-3 p-2" id="chatHistory">
-                            <div class="chat-message bot mb-2">
-                                <small class="text-muted d-block mb-1">AI Assistant</small>
-                                <div class="p-2 bg-white rounded shadow-sm d-inline-block">
-                                    Hello! I've analyzed your data. Ask me specifically about columns like 
-                                    ${data.analysis.columns.slice(0, 3).map(c => `<b>${c.name}</b>`).join(', ')}.
+                    <div class="card-body d-flex flex-column p-0" style="height: 500px;">
+                        <div class="chat-history flex-grow-1 overflow-auto p-3" id="chatHistory" style="background: #f8f9fa;">
+                            <div class="chat-message bot mb-3">
+                                <div class="d-flex flex-column align-items-start">
+                                    <div class="p-3 bg-white rounded-3 shadow-sm text-dark border" style="max-width: 85%;">
+                                        Hello! I have full stats for your columns. Ask me things like:<br>
+                                        <small class="text-muted">
+                                        • "What is the mean of <b>${data.analysis.columns[0]?.name || 'column'}</b>?"<br>
+                                        • "Show missing values"<br>
+                                        • "Describe <b>${data.analysis.columns[0]?.name || 'column'}</b>"
+                                        </small>
+                                    </div>
+                                    <small class="text-muted mt-1 ms-1" style="font-size: 0.75rem;">Just now</small>
                                 </div>
                             </div>
                         </div>
-                        <div class="mt-auto">
+                        <div class="p-3 bg-white border-top">
                             <div class="input-group">
-                                <input type="text" class="form-control" id="chatInput" placeholder="Type a question...">
-                                <button class="btn btn-dark" type="button" onclick="handleChatInput()">
+                                <input type="text" class="form-control border-0 bg-light" id="chatInput" placeholder="Ask a question..." onkeypress="handleEnter(event)">
+                                <button class="btn btn-primary rounded-circle ms-2" style="width: 40px; height: 40px;" type="button" onclick="handleChatInput()">
                                     <i class="fas fa-paper-plane"></i>
                                 </button>
                             </div>
@@ -238,44 +250,105 @@ function renderAIInsights(data) {
     return html;
 }
 
+// Global data reference for chat (simplest way without refactoring everything)
+let currentAnalysisData = null;
+
+function handleEnter(e) {
+    if (e.key === 'Enter') handleChatInput();
+}
+
 function handleChatInput() {
     const input = document.getElementById('chatInput');
     const history = document.getElementById('chatHistory');
     const msg = input.value.trim();
     if (!msg) return;
 
+    // Store data globally if not already (hacky but works for this scope)
+    if (!currentAnalysisData) {
+        // Try to find it attached to the DOM or infer from context
+        // Ideally pass it in, but for now we assume it's available or we can't answer specific stats
+        // Actually, we can attach it to the window when renderAIInsights is called
+    }
+    const data = window.currentDatasetAnalysis;
+
     // User Message
     history.innerHTML += `
-        <div class="chat-message user mb-2 text-end">
-            <small class="text-muted d-block mb-1">You</small>
-            <div class="p-2 bg-dark text-white rounded shadow-sm d-inline-block text-start">
+        <div class="chat-message user mb-3 d-flex flex-column align-items-end">
+            <div class="p-3 bg-primary text-white rounded-3 shadow-sm text-start" style="max-width: 85%;">
                ${msg}
             </div>
+            <small class="text-muted mt-1 me-1" style="font-size: 0.75rem;">You</small>
         </div>
     `;
 
     input.value = '';
     history.scrollTop = history.scrollHeight;
 
-    // Mock Bot Response
+    // Smart Response Logic
     setTimeout(() => {
-        let response = "I'm focusing on the generated insights for now. Try exploring the charts tab for visual details!";
-        if (msg.toLowerCase().includes('mean') || msg.toLowerCase().includes('average')) {
-            response = "You can find detailed statistics like Mean and Median in the 'Column Insights' tab.";
-        } else if (msg.toLowerCase().includes('outlier')) {
-            response = "I've flagged potential distribution anomalies in the main insights panel on the left.";
+        let response = "I'm not sure about that. Try asking about specific column statistics.";
+
+        if (data) {
+            const lowerMsg = msg.toLowerCase();
+            const columns = data.analysis.columns;
+
+            // 1. Identify mentioned column
+            let targetCol = columns.find(c => lowerMsg.includes(c.name.toLowerCase()));
+
+            if (targetCol) {
+                // Specific column questions
+                if (lowerMsg.includes('mean') || lowerMsg.includes('average')) {
+                    response = targetCol.describe && targetCol.describe.mean
+                        ? `The average (mean) of <b>${targetCol.name}</b> is <b>${formatNumber(targetCol.describe.mean)}</b>.`
+                        : `<b>${targetCol.name}</b> is categorical, so it has no numerical average.`;
+                } else if (lowerMsg.includes('max') || lowerMsg.includes('highest')) {
+                    response = targetCol.describe && targetCol.describe.max
+                        ? `The maximum value in <b>${targetCol.name}</b> is <b>${formatNumber(targetCol.describe.max)}</b>.`
+                        : `Max value check failed.`;
+                } else if (lowerMsg.includes('min') || lowerMsg.includes('lowest')) {
+                    response = targetCol.describe && targetCol.describe.min
+                        ? `The minimum value in <b>${targetCol.name}</b> is <b>${formatNumber(targetCol.describe.min)}</b>.`
+                        : `Min value check failed.`;
+                } else if (lowerMsg.includes('unique') || lowerMsg.includes('distinct')) {
+                    response = `<b>${targetCol.name}</b> has <b>${targetCol.unique}</b> unique values.`;
+                } else if (lowerMsg.includes('describe') || lowerMsg.includes('stats') || lowerMsg.includes('summary')) {
+                    // Full describe
+                    if (targetCol.describe) {
+                        response = `<b>Statistics for ${targetCol.name}:</b><br><ul class="mb-0 text-start ps-3">`;
+                        for (const [k, v] of Object.entries(targetCol.describe)) {
+                            response += `<li>${k}: ${formatNumber(v)}</li>`;
+                        }
+                        response += `</ul>`;
+                    } else {
+                        response = `Basic stats for <b>${targetCol.name}</b>: Missing: ${targetCol.missing}, Unique: ${targetCol.unique}.`;
+                    }
+                } else {
+                    response = `I found column <b>${targetCol.name}</b>. You can ask me for its mean, max, min, or full description!`;
+                }
+            } else {
+                // General questions
+                if (lowerMsg.includes('missing')) {
+                    response = `The dataset has <b>${data.analysis.missing_cells}</b> missing values in total.`;
+                } else if (lowerMsg.includes('rows') || lowerMsg.includes('count')) {
+                    response = `The dataset has <b>${data.original_shape[0]}</b> rows.`;
+                }
+            }
+        } else {
+            response = "Error: Data context not found. Please reload the analysis.";
         }
 
         history.innerHTML += `
-            <div class="chat-message bot mb-2">
-                <small class="text-muted d-block mb-1">AI Assistant</small>
-                <div class="p-2 bg-white rounded shadow-sm d-inline-block">
-                   ${response}
+            <div class="chat-message bot mb-3">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="p-3 bg-white rounded-3 shadow-sm text-dark border" style="max-width: 85%;">
+                       ${response}
+                    </div>
+                    <small class="text-muted mt-1 ms-1" style="font-size: 0.75rem;">AI Assistant</small>
                 </div>
             </div>
         `;
         history.scrollTop = history.scrollHeight;
-    }, 600);
+    }, 400);
 }
 
 function renderOverview(data) {
@@ -440,25 +513,56 @@ function renderColumnInsights(data) {
         html += '</div>';
     }
 
-    html += '<h5>Column Statistics</h5><div class="table-responsive"><table class="table table-sm">';
-    html += '<thead><tr><th>Column</th><th>Type</th><th>Missing</th><th>Unique</th><th>Mean/Top</th></tr></thead><tbody>';
+    html += '<h5>Detailed Column Statistics</h5>';
 
-    columns.forEach(col => {
-        let val = '-';
-        if (col.type === 'numeric') val = formatNumber(col.mean);
-        if (col.type === 'categorical' && col.top_values && col.top_values.length > 0) val = col.top_values[0][0];
+    // Separate Numeric and Categorical for better tables
+    const numericCols = columns.filter(c => c.type === 'numeric');
+    const catCols = columns.filter(c => c.type === 'categorical');
 
-        html += `
-            <tr>
-                <td>${col.name}</td>
-                <td><span class="badge bg-light text-dark border">${col.type}</span></td>
-                <td>${col.missing}</td>
-                <td>${col.unique}</td>
-                <td>${val}</td>
-            </tr>
-        `;
-    });
-    html += '</tbody></table></div>';
+    if (numericCols.length > 0) {
+        html += '<h6 class="mt-3 text-muted">Numeric Columns</h6>';
+        html += '<div class="table-responsive mb-4"><table class="table table-sm table-hover table-bordered">';
+        html += '<thead class="table-light"><tr><th>Column</th><th>Mean</th><th>Std</th><th>Min</th><th>25%</th><th>50%</th><th>75%</th><th>Max</th><th>Missing</th></tr></thead><tbody>';
+
+        numericCols.forEach(col => {
+            const d = col.describe || {};
+            html += `
+                <tr>
+                    <td class="fw-bold">${col.name}</td>
+                    <td>${formatNumber(d.mean)}</td>
+                    <td>${formatNumber(d.std)}</td>
+                    <td>${formatNumber(d.min)}</td>
+                    <td>${formatNumber(d['25%'])}</td>
+                    <td>${formatNumber(d['50%'])}</td>
+                    <td>${formatNumber(d['75%'])}</td>
+                    <td>${formatNumber(d.max)}</td>
+                    <td>${col.missing}</td>
+                </tr>
+            `;
+        });
+        html += '</tbody></table></div>';
+    }
+
+    if (catCols.length > 0) {
+        html += '<h6 class="mt-3 text-muted">Categorical Columns</h6>';
+        html += '<div class="table-responsive"><table class="table table-sm table-hover table-bordered">';
+        html += '<thead class="table-light"><tr><th>Column</th><th>Count</th><th>Unique</th><th>Top Value</th><th>Freq (Top)</th><th>Missing</th></tr></thead><tbody>';
+
+        catCols.forEach(col => {
+            const d = col.describe || {};
+            html += `
+                <tr>
+                    <td class="fw-bold">${col.name}</td>
+                    <td>${d.count || '-'}</td>
+                    <td>${d.unique || col.unique}</td>
+                    <td>${d.top || '-'}</td>
+                    <td>${d.freq || '-'}</td>
+                    <td>${col.missing}</td>
+                </tr>
+             `;
+        });
+        html += '</tbody></table></div>';
+    }
 
     return html;
 }
