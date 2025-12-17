@@ -823,6 +823,26 @@ in the Software without restriction...
 - 📧 **Email**: support@normalize.io (if available)
 
 ---
+## 👥 Team
+This project was built by a dedicated team of developers and data enthusiasts:
+```
+<div align="center">
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+|**Team Member**     |     **Role**   |                         **GitHub**                       |                            **LinkedIn**                                |
+| Indrayani Paraande | Core Developer | [@indrayani-github](https://github.com/IndrayaniParande) |  [LinkedIn](https://www.linkedin.com/in/indrayani-parande-204212200/)  |
+| Shubham Khodade    | Core Developer | 
+| Shravani Mhatre    | Core Developer | 
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+</div>
+```
+🤝 Individual Contributions
+We believe in recognizing everyone's unique contributions to this project:
+
+Indrayani Paraande - [Specify contribution area, e.g., Data Cleaning, Advance Data Cleaning]
+Shubham Khodade - [Specify contribution area, e.g., Data Frame Analysis,Basic Analysis of csv's]
+Shravani Mhatre - [Specify contribution area, e.g., Frontend Development, Visualization Engine, UI/UX design]
+
 
 ## 🙏 Acknowledgments
 
@@ -830,6 +850,7 @@ in the Software without restriction...
 - **Contributors** who help improve this project
 - **Beta testers** who provided invaluable feedback
 - **Data science community** for inspiration and best practices
+- also 
 
 ---
 
