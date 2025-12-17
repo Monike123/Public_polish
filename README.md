@@ -823,16 +823,40 @@ in the Software without restriction...
 - 📧 **Email**: support@normalize.io (if available)
 
 ---
+
 ## 👥 Team
 This project was built by a dedicated team of developers and data enthusiasts:
 
 
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-|**Team Member**     |     **Role**   |                         **GitHub**                       |                            **LinkedIn**                                |
-| Indrayani Paraande | Core Developer | [@indrayani-github](https://github.com/IndrayaniParande) |  [LinkedIn](https://www.linkedin.com/in/indrayani-parande-204212200/)  |
-| Shubham Khodade    | Core Developer | 
-| Shravani Mhatre    | Core Developer | 
-└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+👥 Team
+This project was built by a dedicated team of developers and data enthusiasts:
+<table align="center">
+  <tr>
+    <th>Team Member</th>
+    <th>Role</th>
+    <th>GitHub</th>
+    <th>LinkedIn</th>
+  </tr>
+  <tr>
+    <td><strong>Indrayani Paraande</strong></td>
+    <td>Core Developer</td>
+    <td><a href="[https://github.com/indrayani-username](https://github.com/IndrayaniParande)">@indrayani-username</a></td>
+    <td><a href="[https://linkedin.com/in/indrayani-paraande](https://www.linkedin.com/in/indrayani-parande-204212200/)">LinkedIn Profile</a></td>
+  </tr>
+  <tr>
+    <td><strong>Shubham Khodade</strong></td>
+    <td>Core Developer</td>
+    <td><a href="https://github.com/shubham-username">@shubham-username</a></td>
+    <td><a href="https://linkedin.com/in/shubham-khodade">LinkedIn Profile</a></td>
+  </tr>
+  <tr>
+    <td><strong>Shravani Mhatre</strong></td>
+    <td>Core Developer</td>
+    <td><a href="https://github.com/shravani-username">@shravani-username</a></td>
+    <td><a href="https://linkedin.com/in/shravani-mhatre">LinkedIn Profile</a></td>
+  </tr>
+</table>
+
 ---
 
 ## 🤝 Individual Contributions
