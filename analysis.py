@@ -102,7 +102,23 @@ def compute_categorical_stats(s: pd.Series):
 
 # ---------- Column detection ----------
 def detect_column_types(df: pd.DataFrame, datetime_threshold=0.8):
-    """Detect and classify column types"""
+    """Detect and classify column types with aggressive numeric conversion"""
+    # Try to convert object columns to numeric if they look like numbers
+    for col in df.select_dtypes(include=['object']).columns:
+        try:
+            # Attempt numeric conversion
+            # Clean common non-numeric chars like currency symbols or commas if simple
+            # But pd.to_numeric with coerce is safer for now
+            # count valid numbers vs total
+            converted = pd.to_numeric(df[col], errors='coerce')
+            valid_ratio = converted.notna().sum() / len(df)
+            
+            # If more than 50% are valid numbers or if it was intended as numeric (less strict)
+            if valid_ratio > 0.5 and df[col].nunique() > 5: # heuristic: low cardinality might be categorical categorical
+                df[col] = converted
+        except:
+            pass
+
     num = df.select_dtypes(include=[np.number]).columns.tolist()
     datetime_cols = []
     
@@ -110,10 +126,12 @@ def detect_column_types(df: pd.DataFrame, datetime_threshold=0.8):
         if c in num: 
             continue
         try:
-            parsed = pd.to_datetime(df[c], errors='coerce')
-            if parsed.notna().mean() >= datetime_threshold:
-                datetime_cols.append(c)
-                df[c] = parsed
+            # Check for datetime
+            if df[c].dtype == 'object':
+                parsed = pd.to_datetime(df[c], errors='coerce')
+                if parsed.notna().mean() >= datetime_threshold:
+                    datetime_cols.append(c)
+                    df[c] = parsed
         except Exception:
             pass
     
@@ -330,6 +348,287 @@ def chart_scatter_top_correlation(df, numeric_cols, out_dir):
         return None
 
 # ---------- Main analyze function ----------
+# ---------- Quality Score ----------
+def calculate_quality_score(df):
+    """
+    Calculate a Data Quality Score (0-100).
+    Based on: missing values, duplicates, outliers (simple detection).
+    """
+    try:
+        score = 100.0
+        row_count = len(df)
+        if row_count == 0:
+            return 0.0
+
+        # 1. Missing Values (weight 40%)
+        total_cells = df.size
+        missing_cells = df.isna().sum().sum()
+        missing_pct = (missing_cells / total_cells) * 100
+        score -= (missing_pct * 0.4)
+
+        # 2. Duplicate Rows (weight 30%)
+        # Note: This might be expensive on huge datasets, but okay for this scale
+        dup_count = df.duplicated().sum()
+        dup_pct = (dup_count / row_count) * 100
+        score -= (dup_pct * 0.3)
+
+        # 3. Outlier "Potential" (weight 20%) - very heuristic
+        # checking numeric columns for values outside 3 std devs
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) > 0:
+            outlier_ratios = []
+            for col in numeric_cols:
+                # simple Z-score estimate
+                col_data = df[col].dropna()
+                if len(col_data) > 0:
+                    z_scores = np.abs(stats.zscore(col_data))
+                    outliers = (z_scores > 3).sum()
+                    outlier_ratios.append(outliers / len(col_data))
+            
+            if outlier_ratios:
+                avg_outlier_pct = np.mean(outlier_ratios) * 100
+                score -= (avg_outlier_pct * 0.2)
+
+        # 4. Column Naming Convention (weight 10%)
+        # punishment for spaces or special chars in columns
+        bad_col_names = sum(1 for c in df.columns if ' ' in str(c) or not str(c).isidentifier())
+        bad_col_pct = (bad_col_names / len(df.columns)) * 100
+        score -= (bad_col_pct * 0.1)
+
+        return max(0.0, round(score, 1))
+    except Exception as e:
+        print(f"Error calculating quality score: {e}")
+        return 0.0
+
+# ---------- Main analyze function ----------
+def analyze_df(df, out_dir_path):
+    """
+    Analyze a DataFrame and generate reports/charts.
+    Returns a dictionary with comprehensive results.
+    """
+    out_dir = ensure_dir(out_dir_path)
+    
+    # 1. Quality Score
+    quality_score = calculate_quality_score(df)
+    
+    # 2. Column Detection
+    numeric_cols, categorical_cols, datetime_cols = detect_column_types(df)
+    
+    # 3. Generate Charts (Images)
+    created_charts = []
+    
+    # Histograms
+    try:
+        chart = chart_histograms_overlay(df, numeric_cols, out_dir)
+        if chart: created_charts.append(os.path.basename(chart))
+    except Exception: pass
+    
+    try:
+        charts = chart_separate_histograms(df, numeric_cols, out_dir)
+        if charts: created_charts.extend([os.path.basename(c) for c in charts])
+    except Exception: pass
+    
+    # Boxplots
+    try:
+        chart = chart_boxplot(df, numeric_cols, out_dir)
+        if chart: created_charts.append(os.path.basename(chart))
+    except Exception: pass
+    
+    # Correlation Heatmap
+    try:
+        chart = chart_correlation_heatmap(df, numeric_cols, out_dir)
+        if chart: created_charts.append(os.path.basename(chart))
+    except Exception: pass
+    
+    # Top Categories
+    try:
+        chart = chart_top_categories(df, categorical_cols, out_dir)
+        if chart: created_charts.append(os.path.basename(chart))
+    except Exception: pass
+    
+    # Scatter
+    try:
+        chart = chart_scatter_top_correlation(df, numeric_cols, out_dir)
+        if chart: created_charts.append(os.path.basename(chart))
+    except Exception: pass
+
+    # 4. Generate JSON Stats (Compatible with frontend needs)
+    analysis_info = {
+        'dataset_shape': df.shape,
+        'quality_score': quality_score,
+        'missing_cells': int(df.isna().sum().sum()),
+        'duplicate_rows': int(df.duplicated().sum()),
+        'columns': [],
+        'correlation': {},
+        'charts': created_charts, # List of filenames
+        'column_alerts': [] # For UI insights
+    }
+    
+    # Compute detailed column stats
+    for col in df.columns:
+        col_type = 'numeric' if col in numeric_cols else 'categorical'
+        if col in datetime_cols: col_type = 'datetime'
+        
+        col_data = {
+            'name': col,
+            'type': col_type,
+            'missing': int(df[col].isna().sum()),
+            'unique': int(df[col].nunique()),
+            'dtype': str(df[col].dtype)
+        }
+        
+        # Alerts
+        if col_data['missing'] / len(df) > 0.5:
+            analysis_info['column_alerts'].append({
+                'column': col, 'type': 'warning', 'msg': 'High missing values (>50%)'
+            })
+        if col_data['unique'] == 1:
+            analysis_info['column_alerts'].append({
+                'column': col, 'type': 'warning', 'msg': 'Zero variance (constant value)'
+            })
+
+        if col in numeric_cols:
+            stats_res = compute_numeric_stats(df[col])
+            col_data.update(stats_res)
+            # Check skew
+            if abs(stats_res.get('skew', 0) or 0) > 2:
+                 analysis_info['column_alerts'].append({
+                    'column': col, 'type': 'info', 'msg': f"Highly skewed ({stats_res['skew']:.2f})"
+                })
+        elif col in categorical_cols:
+            stats_res = compute_categorical_stats(df[col])
+            col_data.update(stats_res)
+            if stats_res.get('unique', 0) > 50:
+                 analysis_info['column_alerts'].append({
+                    'column': col, 'type': 'info', 'msg': f"High cardinality ({stats_res['unique']} unique)"
+                })
+        
+        analysis_info['columns'].append(col_data)
+
+    # Correlation matrix for JSON
+    if len(numeric_cols) > 0:
+        try:
+            corr = df[numeric_cols].corr().fillna(0).round(2)
+            analysis_info['correlation'] = corr.to_dict()
+        except: pass
+
+    # 5. Generate Smart Insights (AI Narrative)
+    # 5. Generate Smart Insights (AI Narrative)
+    analysis_info['smart_insights'] = generate_narrative_insights(df, analysis_info)
+
+    return sanitize_for_json(analysis_info)
+
+def sanitize_for_json(obj):
+    """
+    Recursively sanitizes a Python object to ensure it is JSON serializable.
+    - Converts NaN/Infinity to None
+    - Converts numpy types to Python native types
+    """
+    import math
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    elif isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(x) for x in obj]
+    elif isinstance(obj, (np.integer, np.int64)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float64)):
+        val = float(obj)
+        if math.isnan(val) or math.isinf(val):
+            return None
+        return val
+    elif isinstance(obj, np.ndarray):
+        return sanitize_for_json(obj.tolist())
+    return obj
+
+
+def generate_narrative_insights(df, info):
+    """
+    Generate natural language insights mimicking an AI analyst.
+    """
+    insights = []
+    
+    # 1. Dataset Overview
+    rows, cols = df.shape
+    insights.append({
+        "icon": "fa-database",
+        "title": "Dataset Snapshot",
+        "content": f"The dataset contains <strong>{rows} rows</strong> and <strong>{cols} columns</strong>. "
+                   f"It has a Data Quality Score of <strong>{info['quality_score']}/100</strong>."
+    })
+
+    # 2. Key Correlations (if numeric data exists)
+    if 'correlation' in info and info['correlation']:
+        correlations = []
+        corr_matrix = pd.DataFrame(info['correlation'])
+        # Iterate to find strong correlations
+        for c in corr_matrix.columns:
+            for r in corr_matrix.index:
+                if c != r:
+                    val = corr_matrix.loc[r, c]
+                    if val > 0.7:
+                        correlations.append(f"Strong positive relation between <strong>{r}</strong> and <strong>{c}</strong> ({val})")
+                    elif val < -0.7:
+                        correlations.append(f"Strong negative relation between <strong>{r}</strong> and <strong>{c}</strong> ({val})")
+        
+        # Deduplicate (A-B is same as B-A) and limit
+        unique_corrs = list(set([tuple(sorted(x.split(' and '))) for x in correlations])) # heuristic dedup
+        # Simpler approach: usage set of frozensets
+        seen = set()
+        final_corrs = []
+        for c in correlations:
+            # extract columns for dedup
+            try:
+                parts = c.split(' between ')[1].split(' (')
+                cols_part = parts[0]
+                col_set = frozenset(pd.Index([x.replace('<strong>', '').replace('</strong>', '') for x in cols_part.split(' and ')]))
+                if col_set not in seen:
+                    seen.add(col_set)
+                    final_corrs.append(c)
+            except: final_corrs.append(c) # fallback
+
+        if final_corrs:
+            insights.append({
+                "icon": "fa-project-diagram",
+                "title": "Key Relationships",
+                "content": "<ul>" + "".join([f"<li>{c}</li>" for c in final_corrs[:5]]) + "</ul>"
+            })
+
+    # 3. Missing Data Highlights
+    missing_cols = [c for c in info['columns'] if c['missing'] > 0]
+    if missing_cols:
+        top_missing = sorted(missing_cols, key=lambda x: x['missing'], reverse=True)[:3]
+        txt = "Key columns with specific missing data concerns:<ul>"
+        for m in top_missing:
+            pct = (m['missing'] / rows) * 100
+            txt += f"<li><strong>{m['name']}</strong>: {pct:.1f}% missing</li>"
+        txt += "</ul>"
+        insights.append({
+            "icon": "fa-exclamation-triangle",
+            "title": "Data Quality alerts",
+            "content": txt
+        })
+
+    # 4. Outlier / Skewness detection
+    skewed = [c for c in info['columns'] if c['type'] == 'numeric' and abs(c.get('skew', 0)) > 2]
+    if skewed:
+        txt = "Significant skewness detected in distributions:<ul>"
+        for s in skewed[:3]:
+            direction = "right (positive)" if s.get('skew', 0) > 0 else "left (negative)"
+            txt += f"<li><strong>{s['name']}</strong> is skewed to the {direction}.</li>"
+        txt += "</ul>"
+        insights.append({
+            "icon": "fa-chart-area",
+            "title": "Distribution Anomalies",
+            "content": txt
+        })
+
+    return insights
+
+
 def analyze_csv(path_csv):
     """Main function to analyze CSV and generate comprehensive report"""
     p = Path(path_csv)
@@ -346,112 +645,12 @@ def analyze_csv(path_csv):
         raise Exception("The CSV file is empty")
     
     # Create output directory
-    out_dir = ensure_dir(p.parent / (p.stem + "_analysis_outputs"))
+    out_dir = p.parent / (p.stem + "_analysis_outputs")
     
-    # Detect column types
-    numeric_cols, categorical_cols, datetime_cols = detect_column_types(df.copy())
-    
-    print(f"Detected {len(numeric_cols)} numeric, {len(categorical_cols)} categorical, {len(datetime_cols)} datetime columns")
-    
-    # Compute statistics
-    rows = []
-    
-    # Process numeric columns
-    for c in numeric_cols:
-        stats_dict = compute_numeric_stats(df[c])
-        stats_dict_flat = {f"num_{k}": v if k != 'modes' else ','.join(map(str, v)) 
-                          for k, v in stats_dict.items()}
-        stats_dict_flat['column'] = c
-        stats_dict_flat['dtype'] = str(df[c].dtype)
-        stats_dict_flat['column_type'] = 'numeric'
-        rows.append(stats_dict_flat)
-    
-    # Process categorical columns
-    for c in categorical_cols:
-        stats_dict = compute_categorical_stats(df[c])
-        flat = {'column': c, 'dtype': str(df[c].dtype), 'column_type': 'categorical',
-                'cat_count': stats_dict['count'], 'cat_missing': stats_dict['missing'],
-                'cat_unique': stats_dict['unique']}
-        
-        # Add top values
-        for i, (val, cnt) in enumerate(stats_dict['top_values'][:5], start=1):
-            flat[f'top{i}_value'] = val
-            flat[f'top{i}_count'] = cnt
-        
-        rows.append(flat)
-    
-    # Save summary statistics
-    if rows:
-        summary_df = pd.DataFrame(rows)
-        summary_csv = out_dir / 'summary_statistics.csv'
-        summary_df.to_csv(summary_csv, index=False)
-        print(f"✓ Saved summary statistics to: {summary_csv}")
-    
-    # Generate visualizations
-    created_charts = []
-    
-    # 1. Histogram overlay
-    try:
-        chart = chart_histograms_overlay(df, numeric_cols, out_dir)
-        if chart: created_charts.append(chart)
-    except Exception as e:
-        print(f"Failed to create histogram overlay: {e}")
-    
-    # 2. Individual histograms
-    try:
-        charts = chart_separate_histograms(df, numeric_cols, out_dir)
-        created_charts.extend(charts)
-    except Exception as e:
-        print(f"Failed to create individual histograms: {e}")
-    
-    # 3. Boxplots
-    try:
-        chart = chart_boxplot(df, numeric_cols, out_dir)
-        if chart: created_charts.append(chart)
-    except Exception as e:
-        print(f"Failed to create boxplots: {e}")
-    
-    # 4. Correlation heatmap
-    try:
-        chart = chart_correlation_heatmap(df, numeric_cols, out_dir)
-        if chart: created_charts.append(chart)
-    except Exception as e:
-        print(f"Failed to create correlation heatmap: {e}")
-    
-    # 5. Top categories
-    try:
-        chart = chart_top_categories(df, categorical_cols, out_dir)
-        if chart: created_charts.append(chart)
-    except Exception as e:
-        print(f"Failed to create category chart: {e}")
-    
-    # 6. Scatter plot of most correlated variables
-    try:
-        chart = chart_scatter_top_correlation(df, numeric_cols, out_dir)
-        if chart: created_charts.append(chart)
-    except Exception as e:
-        print(f"Failed to create scatter plot: {e}")
-    
-    # Print summary
-    print(f"\n=== Analysis Complete ===")
-    print(f"Dataset: {len(df)} rows × {len(df.columns)} columns")
-    print(f"Numeric columns: {len(numeric_cols)}")
-    print(f"Categorical columns: {len(categorical_cols)}")
-    print(f"DateTime columns: {len(datetime_cols)}")
-    print(f"Charts created: {len(created_charts)}")
-    
-    return {
-        'summary_csv': str(summary_csv) if rows else None,
-        'charts': created_charts,
-        'out_dir': str(out_dir),
-        'dataset_info': {
-            'rows': len(df),
-            'columns': len(df.columns),
-            'numeric_cols': len(numeric_cols),
-            'categorical_cols': len(categorical_cols),
-            'datetime_cols': len(datetime_cols)
-        }
-    }
+    # Use new generic function
+    result = analyze_df(df, out_dir)
+    result['out_dir'] = str(out_dir)
+    return result
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

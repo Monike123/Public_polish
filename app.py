@@ -24,6 +24,11 @@ CLEANED_DATASETS_FOLDER = BASE_DIR / 'cleaned_datasets'
 ANALYSIS_FOLDER = BASE_DIR / 'analysis'
 PUBLIC_DATASETS_FOLDER = 'dataset'
 
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
 ALLOWED_EXTENSIONS = {'csv', 'json', 'xlsx', 'xls'}
 
 # Ensure directories exist
@@ -75,7 +80,11 @@ def load_data_simple(file_path, file_type):
         app.logger.info(f"Loading {file_type} file: {file_path}")
         
         if file_type.lower() == 'csv':
-            df = pd.read_csv(file_path)
+            try:
+                df = pd.read_csv(file_path, sep=None, engine='python')
+            except:
+                # Fallback to default if python engine fails or for edge cases
+                df = pd.read_csv(file_path)
         elif file_type.lower() == 'json':
             df = pd.read_json(file_path)
         elif file_type.lower() == 'excel':
@@ -147,129 +156,14 @@ import numpy as np
 import math
 from scipy import stats as _stats  # if scipy available; optional fallback below
 
-def create_simple_analysis(df, analysis_folder):
-    """Create robust analysis JSON including descriptive stats, histograms, correlation, and sample rows."""
-    try:
-        analysis_info = {
-            'dataset_shape': df.shape,
-            'column_info': {},       # per-column: type, stats, histogram, top_values
-            'summary_stats': {},     # optional aggregates
-            'data_quality': {
-                'missing_values': df.isnull().sum().to_dict(),
-                'duplicate_rows': int(df.duplicated().sum()),
-                'data_types': df.dtypes.astype(str).to_dict()
-            },
-            'correlation': {},       # numeric correlation matrix
-            'sample_rows': []        # small sample for scatter plots
-        }
+import analysis  # Import the analysis module
 
-        # compute column_info
-        for col in df.columns:
-            series = df[col]
-            col_info = {
-                'type': str(series.dtype),
-                'non_null_count': int(series.count()),
-                'null_count': int(series.isnull().sum()),
-                'unique_values': int(series.nunique())
-            }
-
-            # numeric columns: stats + histogram
-            if pd.api.types.is_numeric_dtype(series):
-                non_null = series.dropna()
-                cnt = int(non_null.count())
-                col_info['stats'] = {
-                    'count': cnt,
-                    'mean': float(non_null.mean()) if cnt > 0 else None,
-                    'std': float(non_null.std()) if cnt > 0 else None,
-                    'min': float(non_null.min()) if cnt > 0 else None,
-                    'q1': float(non_null.quantile(0.25)) if cnt > 0 else None,
-                    'median': float(non_null.median()) if cnt > 0 else None,
-                    'q3': float(non_null.quantile(0.75)) if cnt > 0 else None,
-                    'max': float(non_null.max()) if cnt > 0 else None,
-                    'skew': float(non_null.skew()) if cnt > 0 else None,
-                    'kurtosis': float(non_null.kurtosis()) if cnt > 0 else None
-                }
-                # histogram: try 12 bins (only values)
-                try:
-                    arr = non_null.to_numpy()
-                    if arr.size > 0:
-                        counts, bins = np.histogram(arr, bins=12)
-                        col_info['histogram'] = {
-                            'bins': [float(x) for x in bins],       # length n+1
-                            'counts': [int(x) for x in counts]      # length n
-                        }
-                except Exception:
-                    col_info['histogram'] = None
-
-            else:
-                # categorical / object: top values for pie/donut
-                try:
-                    top = series.dropna().value_counts().head(10)
-                    col_info['top_values'] = top.to_dict()
-                except Exception:
-                    col_info['top_values'] = {}
-
-            analysis_info['column_info'][col] = col_info
-
-        # correlation matrix for numeric columns
-        try:
-            numeric_df = df.select_dtypes(include=[np.number])
-            if numeric_df.shape[1] > 0:
-                corr = numeric_df.corr().fillna(0)
-                # convert to nested mapping of floats
-                analysis_info['correlation'] = corr.round(4).to_dict()
-            else:
-                analysis_info['correlation'] = {}
-        except Exception:
-            analysis_info['correlation'] = {}
-
-        # sample rows for scatter plots (limit to 500 rows to keep payload small)
-        try:
-            sample = df.select_dtypes(include=[np.number]).head(500)
-            analysis_info['sample_rows'] = sample.to_dict(orient='records')
-        except Exception:
-            analysis_info['sample_rows'] = []
-
-        # save textual report as before (optional)
-        report_path = analysis_folder / 'analysis_report.txt'
-        try:
-            with open(report_path, 'w') as f:
-                f.write("DATASET ANALYSIS REPORT\n")
-                f.write("=" * 60 + "\n\n")
-                f.write(f"Dataset Shape: {analysis_info['dataset_shape']}\n")
-                f.write(f"Total Missing Values: {sum(analysis_info['data_quality']['missing_values'].values())}\n")
-                f.write(f"Duplicate Rows: {analysis_info['data_quality']['duplicate_rows']}\n\n")
-                f.write("COLUMN DETAILS:\n")
-                f.write("-" * 40 + "\n")
-                for col, info in analysis_info['column_info'].items():
-                    f.write(f"\n{col} ({info['type']}):\n")
-                    f.write(f"  Non-null: {info['non_null_count']}\n")
-                    f.write(f"  Unique: {info['unique_values']}\n")
-                    if 'stats' in info:
-                        s = info['stats']
-                        f.write(f"  Count: {s['count']}\n  Mean: {s['mean']}\n  Std: {s['std']}\n")
-                        f.write(f"  Min/Q1/Median/Q3/Max: {s['min']}/{s['q1']}/{s['median']}/{s['q3']}/{s['max']}\n")
-                    if 'top_values' in info and info['top_values']:
-                        f.write(f"  Top values: {info['top_values']}\n")
-        except Exception:
-            pass
-
-        return analysis_info
-
-    except Exception as e:
-        app.logger.error(f"Error creating analysis: {str(e)}")
-        return {'error': str(e)}
-
+# ... (Previous imports kept if needed, but create_simple_analysis is removed)
 
 @app.route('/')
 def index():
-    try:
-        public_datasets = get_public_datasets()
-        app.logger.info(f"Found {len(public_datasets)} public datasets")
-        return render_template('index.html', datasets=public_datasets)
-    except Exception as e:
-        app.logger.error(f"Error in index route: {str(e)}")
-        return render_template('index.html', datasets=[])
+    datasets = get_public_datasets()
+    return render_template('index.html', datasets=datasets)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -285,6 +179,13 @@ def upload_file():
         
         if not allowed_file(file.filename):
             return jsonify({'error': 'Invalid file type. Please upload CSV, JSON, XLS, or XLSX files.'}), 400
+        
+        # Get configuration from form (default to True)
+        config = {
+            'scale_numeric': request.form.get('scale_numeric', 'true') == 'true',
+            'encode_categorical': request.form.get('encode_categorical', 'true') == 'true',
+            'handle_outliers': request.form.get('handle_outliers', 'true') == 'true'
+        }
         
         # Create unique folder structure
         folder_name = create_unique_folder_name(file.filename)
@@ -305,7 +206,10 @@ def upload_file():
         app.logger.info(f"File saved: {filepath}")
         
         # Process the file
-        result = process_dataset_organized(str(filepath), filename, cleaned_path, analysis_path, folder_name)
+        result = process_dataset_organized(
+            str(filepath), filename, cleaned_path, analysis_path, 
+            folder_name, config
+        )
         
         return jsonify(result)
     
@@ -314,14 +218,66 @@ def upload_file():
         app.logger.error(traceback.format_exc())
         return jsonify({'error': f'Error processing file: {str(e)}'}), 500
 
-def process_dataset_organized(file_path, original_filename, cleaned_folder, analysis_folder, session_id):
-    """Process dataset with organized folder structure"""
+@app.route('/process_public', methods=['POST'])
+def process_public_dataset():
     try:
-        app.logger.info(f"Processing file: {file_path}")
+        data = request.json
+        if not data or 'filename' not in data:
+            return jsonify({'error': 'No filename provided'}), 400
+            
+        filename = data['filename']
+        public_path = Path(PUBLIC_DATASETS_FOLDER) / filename
+        
+        if not public_path.exists():
+            return jsonify({'error': 'Dataset not found'}), 404
+            
+        # Get configuration
+        config = {
+            'scale_numeric': data.get('scale_numeric', True),
+            'encode_categorical': data.get('encode_categorical', True),
+            'handle_outliers': data.get('handle_outliers', True)
+        }
+        
+        # Create unique folder structure
+        folder_name = create_unique_folder_name(filename)
+        
+        # Create folders for this processing session
+        session_folder = BASE_DIR / folder_name
+        upload_path = UPLOAD_FOLDER / folder_name
+        cleaned_path = CLEANED_DATASETS_FOLDER / folder_name
+        analysis_path = ANALYSIS_FOLDER / folder_name
+        
+        for folder in [session_folder, upload_path, cleaned_path, analysis_path]:
+            os.makedirs(folder, exist_ok=True)
+            
+        # Copy public file to session upload folder
+        filepath = upload_path / filename
+        shutil.copy2(public_path, filepath)
+        app.logger.info(f"Public file copied to: {filepath}")
+        
+        # Process the file
+        result = process_dataset_organized(
+            str(filepath), filename, cleaned_path, analysis_path, 
+            folder_name, config
+        )
+        
+        return jsonify(result)
+
+    except Exception as e:
+        app.logger.error(f"Public dataset processing error: {str(e)}")
+        app.logger.error(traceback.format_exc())
+        return jsonify({'error': f'Error processing file: {str(e)}'}), 500
+
+def process_dataset_organized(file_path, original_filename, cleaned_folder, analysis_folder, session_id, config=None):
+    """Process dataset with organized folder structure and configuration"""
+    try:
+        if config is None:
+            config = {'scale_numeric': True, 'encode_categorical': True, 'handle_outliers': True}
+
+        app.logger.info(f"Processing file: {file_path} with config: {config}")
         
         # Determine file type
         file_type = get_file_type(original_filename)
-        app.logger.info(f"File type: {file_type}")
         
         # Load data
         df = load_data_simple(file_path, file_type)
@@ -334,8 +290,25 @@ def process_dataset_organized(file_path, original_filename, cleaned_folder, anal
             raise Exception("No columns found in dataset")
         
         # Clean data
-        df_basic = basic_cleaning_simple(df.copy())
-        df_intermediate = intermediate_cleaning_simple(df.copy())
+        # 1. Basic Cleaning
+        df_basic = basic_cleaning_simple(df.copy()) # Using simple logic within app.py or from data_cleaning? 
+        # Ideally we should use data_cleaning.basic_cleaning too, but let's stick to what's available or import it.
+        # The user file 'data_cleaning.py' has 'basic_cleaning'. 'app.py' has 'basic_cleaning_simple'.
+        # Let's switch to using the imported data_cleaning module for consistency if possible, but
+        # basic_cleaning_simple is defined in app.py. I'll stick to basic_cleaning_simple for now to minimize risk errors,
+        # OR better: use data_cleaning.intermediate_cleaning which I JUST REFACTORED.
+        
+        # Wait, I need to call the NEW intermediate_cleaning from data_cleaning.py
+        from data_cleaning import intermediate_cleaning
+        
+        # 2. Intermediate Cleaning (Advanced)
+        # It returns tuple (df, report)
+        df_intermediate, cleaning_report = intermediate_cleaning(
+            df_basic.copy(),
+            scale_numeric=config['scale_numeric'],
+            encode_categorical=config['encode_categorical'],
+            handle_outliers=config['handle_outliers']
+        )
         
         # Save cleaned datasets
         base_name = Path(original_filename).stem
@@ -346,8 +319,9 @@ def process_dataset_organized(file_path, original_filename, cleaned_folder, anal
         df_intermediate.to_csv(intermediate_clean_path, index=False)
         app.logger.info("Cleaned datasets saved")
         
-        # Create analysis
-        analysis_result = create_simple_analysis(df_intermediate, analysis_folder)
+        # Create analysis using the NEW analysis module
+        app.logger.info("Starting analysis...")
+        analysis_result = analysis.analyze_df(df_intermediate, analysis_folder)
 
         summary = {
             'success': True,
@@ -363,10 +337,16 @@ def process_dataset_organized(file_path, original_filename, cleaned_folder, anal
             'basic_clean_path': str(basic_clean_path),
             'intermediate_clean_path': str(intermediate_clean_path),
             'analysis_folder': str(analysis_folder),
-            'analysis': analysis_result,   # <-- added here
+            'analysis': analysis_result, 
+            'cleaning_report': cleaning_report, # Return the report to frontend
+            'download_ids': { # Logical IDs as requested
+                'basic': f"{session_id}/{basic_clean_path.name}",
+                'advanced': f"{session_id}/{intermediate_clean_path.name}",
+                'analysis': f"{session_id}"
+            },
             'download_urls': {
-                'basic': f"/download/cleaned/{session_id}/basic_cleaned_{base_name}.csv",
-                'advanced': f"/download/cleaned/{session_id}/advanced_cleaned_{base_name}.csv",
+                'basic': f"/download/cleaned/{session_id}/{basic_clean_path.name}",
+                'advanced': f"/download/cleaned/{session_id}/{intermediate_clean_path.name}",
                 'analysis': f"/download/analysis/{session_id}"
             }
         }
@@ -416,12 +396,33 @@ def download_analysis_zip(session_id):
         app.logger.error(f"Analysis download error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/analysis/images/<session_id>/<filename>')
+def serve_analysis_image(session_id, filename):
+    """Serve individual analysis images for the frontend"""
+    try:
+        file_path = ANALYSIS_FOLDER / session_id / filename
+        if file_path.exists():
+            return send_file(str(file_path))
+        else:
+            return jsonify({'error': 'Image not found'}), 404
+    except Exception as e:
+        app.logger.error(f"Image serve error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.errorhandler(413)
 def too_large(e):
     return jsonify({'error': 'File too large. Maximum size is 50MB.'}), 413
 
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({'error': 'Resource not found'}), 404
+
 @app.errorhandler(Exception)
 def handle_exception(e):
+    # pass through HTTP errors
+    if hasattr(e, 'code') and e.code is not None:
+         return jsonify({'error': str(e)}), e.code
+         
     app.logger.error(f"Unhandled exception: {str(e)}")
     app.logger.error(traceback.format_exc())
     return jsonify({'error': 'An unexpected error occurred'}), 500
