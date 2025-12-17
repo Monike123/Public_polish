@@ -1,9 +1,10 @@
-# 🔄 Normalize.io
+<img width="3264" height="1312" alt="3" src="https://github.com/user-attachments/assets/9b31bbfd-e97b-42b9-8057-a9a045a2b131" /># 🔄 Normalize.io
 
 <div align="center">
 
 <!-- Add your banner image here -->
-![Normalize.io Banner](path/to/your/banner-image.png)
+![Normalize.io Banner](<img width="3264" height="1312" alt="3" src="https://github.com/user-attachments/assets/fa7b4146-6fcc-4c0d-af4e-2c2f40ca46df" />)
+
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)](https://flask.palletsprojects.com/)
@@ -160,16 +161,20 @@ Human Data Analyst Intelligence → Automated
 ### 📸 Screenshots
 
 #### Upload Interface
-![Upload Interface](screenshots/upload.png)
+<img width="1919" height="985" alt="Screenshot 2025-12-18 000257" src="https://github.com/user-attachments/assets/1d6c28a4-15fb-422d-8724-bee85617754d" />
+
 
 #### AI Insights Dashboard
-![AI Insights](screenshots/ai-insights.png)
+<img width="777" height="849" alt="image" src="https://github.com/user-attachments/assets/1351fa66-e3d3-4fc6-97fb-d91e6ad00994" />
+
 
 #### Chat with Data
-![Chat Interface](screenshots/chat.png)
+<img width="1919" height="977" alt="Screenshot 2025-12-18 001045" src="https://github.com/user-attachments/assets/9992ff68-d6e1-42f9-a43a-2816c96443bb" />
+
 
 #### Visualization Gallery
-![Visualizations](screenshots/charts.png)
+<img width="1194" height="930" alt="Screenshot 2025-12-18 001115" src="https://github.com/user-attachments/assets/7821b222-3da7-4eda-abf6-5265735a4485" />
+
 
 ---
 
