@@ -1,4 +1,4 @@
-<img width="3264" height="1312" alt="3" src="https://github.com/user-attachments/assets/9b31bbfd-e97b-42b9-8057-a9a045a2b131" /># 🔄 Normalize.io
+# 🔄 Normalize.io
 
 <div align="center">
 
