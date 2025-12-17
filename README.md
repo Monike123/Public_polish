@@ -3,7 +3,7 @@
 <div align="center">
 
 <!-- Add your banner image here -->
-![Normalize.io Banner](<img width="3264" height="1312" alt="3" src="https://github.com/user-attachments/assets/fa7b4146-6fcc-4c0d-af4e-2c2f40ca46df" />)
+<img width="3264" height="1312" alt="3" src="https://github.com/user-attachments/assets/fa7b4146-6fcc-4c0d-af4e-2c2f40ca46df" />
 
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
@@ -156,7 +156,11 @@ Human Data Analyst Intelligence → Automated
 <!-- Add your demo video/GIF here -->
 ### 📹 Video Walkthrough
 
-![Demo Video](path/to/your/demo-video.gif)
+
+https://github.com/user-attachments/assets/0afae35d-76e0-4964-91fe-253cfbb12fc8
+
+
+
 
 ### 📸 Screenshots
 
