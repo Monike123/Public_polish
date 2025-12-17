@@ -840,8 +840,8 @@ This project was built by a dedicated team of developers and data enthusiasts:
   <tr>
     <td><strong>Indrayani Paraande</strong></td>
     <td>Core Developer</td>
-    <td><a href="[https://github.com/indrayani-username](https://github.com/IndrayaniParande)">@indrayani-username</a></td>
-    <td><a href="[https://linkedin.com/in/indrayani-paraande](https://www.linkedin.com/in/indrayani-parande-204212200/)">LinkedIn Profile</a></td>
+    <td><a href="https://github.com/IndrayaniParande">@indrayani-username</a></td>
+    <td><a href="https://www.linkedin.com/in/indrayani-parande-204212200/">LinkedIn Profile</a></td>
   </tr>
   <tr>
     <td><strong>Shubham Khodade</strong></td>
