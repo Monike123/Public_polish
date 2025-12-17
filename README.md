@@ -846,8 +846,8 @@ This project was built by a dedicated team of developers and data enthusiasts:
   <tr>
     <td><strong>Shubham Khodade</strong></td>
     <td>Core Developer</td>
-    <td><a href="https://github.com/shubham-username">@shubham-username</a></td>
-    <td><a href="https://linkedin.com/in/shubham-khodade">LinkedIn Profile</a></td>
+    <td><a href="(https://github.com/ShubhamK1211)">@ShubhamK1211</a></td>
+    <td><a href="(https://www.linkedin.com/in/shubham-khodade-683465283/)">LinkedIn Profile</a></td>
   </tr>
   <tr>
     <td><strong>Shravani Mhatre</strong></td>
