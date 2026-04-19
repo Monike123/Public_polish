@@ -298,17 +298,7 @@ python app.py
 http://127.0.0.1:5000
 ```
 
-### Docker Installation (Alternative)
-
-```bash
-# Build image
-docker build -t normalize-io .
-
-# Run container
-docker run -p 5000:5000 normalize-io
-```
-
----
+> **Note:** Docker support is planned for a future release.
 
 ## 📖 Usage Guide
 
@@ -555,7 +545,7 @@ Numeric Columns (8):
 #### 1. Upload and Process Data
 
 ```http
-POST /api/clean
+POST /upload
 Content-Type: multipart/form-data
 
 Parameters:
@@ -567,54 +557,36 @@ Parameters:
 Response:
 {
   "status": "success",
-  "cleaned_data": [...],
-  "visualizations": [...],
+  "analysis": {...},
+  "charts": [...],
   "insights": {...},
-  "download_url": "/api/download/[session_id]"
+  "download_url": "/download/[session_folder]"
 }
 ```
 
 #### 2. Public Dataset
 
 ```http
-GET /api/public-dataset
+POST /process_public
 
 Response:
 {
   "status": "success",
-  "dataset_name": "sample_dataset",
-  "data": [...],
-  "metadata": {...}
+  "analysis": {...},
+  "charts": [...],
+  "insights": {...}
 }
 ```
 
-#### 3. Chat with Data
+#### 3. Download Results
 
 ```http
-POST /api/chat
-Content-Type: application/json
-
-Body:
-{
-  "session_id": "string",
-  "message": "What is the average age?"
-}
-
-Response:
-{
-  "status": "success",
-  "reply": "The average age is 35.2 years...",
-  "metadata": {...}
-}
-```
-
-#### 4. Download Results
-
-```http
-GET /api/download/[session_id]
+GET /download/<folder_name>
 
 Response: ZIP file download
 ```
+
+> **Note:** Chat functionality is handled client-side in JavaScript using the analysis data context.
 
 ---
 
@@ -629,28 +601,25 @@ Response: ZIP file download
 
 ### Data Processing
 - **CSV/JSON Parsers** - Multi-format support
-- **OpenPyXL** - Excel file handling
-- **Chardet** - Encoding detection
+- **OpenPyXL** - Excel (.xlsx) file handling
+- **xlrd** - Legacy Excel (.xls) support
 
 ### Visualization
 - **Matplotlib** - Chart generation
-- **Seaborn** - Statistical visualizations
-- **Plotly** - Interactive charts (planned)
 
 ### AI/ML
-- **Natural Language Processing** - Insight generation
 - **Statistical Analysis** - SciPy integration
-- **Outlier Detection** - Multiple algorithms
+- **Outlier Detection** - IQR-based methods
+- **Feature Scaling** - Scikit-learn StandardScaler
 
 ### Frontend
 - **HTML5/CSS3** - Modern web standards
+- **Bootstrap 5** - Responsive layout
 - **Vanilla JavaScript** - No framework overhead
-- **Responsive Design** - Mobile-friendly
 
 ### Deployment
-- **Gunicorn** - Production WSGI server
-- **Docker** - Containerization support
-- **GitHub Actions** - CI/CD pipeline
+- **Flask built-in server** - Development
+- **Gunicorn** - Production WSGI server (recommended)
 
 ---
 
@@ -736,17 +705,14 @@ We welcome contributions from the community! Here's how you can help:
 ### Development Setup
 
 ```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
+# Install dependencies
+pip install -r requirements.txt
 
-# Run tests
-pytest tests/
+# Run the app
+python app.py
 
-# Run linter
+# Run linter (optional)
 flake8 app.py
-
-# Format code
-black app.py
 ```
 
 ### Code Style Guidelines

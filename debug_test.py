@@ -11,7 +11,7 @@ from pathlib import Path
 
 # Import your modules
 try:
-    from Data_load import load_data
+    from data_load import load_data
     from data_cleaning import basic_cleaning, intermediate_cleaning
     from analysis import analyze_csv
     print("✓ All modules imported successfully")
@@ -66,7 +66,7 @@ def test_pipeline(test_file_path=None):
         
         # Step 3: Intermediate cleaning
         print("\n3. Testing intermediate cleaning...")
-        df_intermediate = intermediate_cleaning(df.copy())
+        df_intermediate, cleaning_report = intermediate_cleaning(df.copy())
         print(f"✓ Intermediate cleaning completed: {df_intermediate.shape}")
         
         # Save cleaned data
@@ -142,7 +142,7 @@ def test_individual_functions():
         traceback.print_exc()
     
     try:
-        intermediate_result = intermediate_cleaning(test_data.copy())
+        intermediate_result, _ = intermediate_cleaning(test_data.copy())
         print(f"✓ Intermediate cleaning: {test_data.shape} -> {intermediate_result.shape}")
     except Exception as e:
         print(f"✗ Intermediate cleaning failed: {str(e)}")

@@ -102,21 +102,18 @@ def compute_categorical_stats(s: pd.Series):
 
 # ---------- Column detection ----------
 def detect_column_types(df: pd.DataFrame, datetime_threshold=0.8):
-    """Detect and classify column types with aggressive numeric conversion"""
+    """Detect and classify column types with aggressive numeric conversion.
+    Note: This function modifies df in-place for type coercion (intentional for downstream analysis).
+    Callers should pass a copy if they need to preserve the original."""
     # Try to convert object columns to numeric if they look like numbers
     for col in df.select_dtypes(include=['object']).columns:
         try:
-            # Attempt numeric conversion
-            # Clean common non-numeric chars like currency symbols or commas if simple
-            # But pd.to_numeric with coerce is safer for now
-            # count valid numbers vs total
             converted = pd.to_numeric(df[col], errors='coerce')
             valid_ratio = converted.notna().sum() / len(df)
-            
-            # If more than 50% are valid numbers or if it was intended as numeric (less strict)
-            if valid_ratio > 0.5 and df[col].nunique() > 5: # heuristic: low cardinality might be categorical categorical
+            # High valid ratio + enough unique vals = likely numeric, not categorical
+            if valid_ratio > 0.5 and df[col].nunique() > 5:
                 df[col] = converted
-        except:
+        except Exception:
             pass
 
     num = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -328,12 +325,14 @@ def chart_scatter_top_correlation(df, numeric_cols, out_dir):
         # Create scatter plot
         ax.scatter(df[col1], df[col2], alpha=0.6, s=50, color='steelblue')
         
-        # Add trend line
+        # Add trend line (align data by dropping rows where either col is NaN)
         try:
-            z = np.polyfit(df[col1].dropna(), df[col2].dropna(), 1)
+            mask = df[[col1, col2]].dropna()
+            z = np.polyfit(mask[col1], mask[col2], 1)
             p = np.poly1d(z)
-            ax.plot(df[col1], p(df[col1]), "r--", alpha=0.8, linewidth=2)
-        except:
+            x_sorted = np.sort(mask[col1])
+            ax.plot(x_sorted, p(x_sorted), "r--", alpha=0.8, linewidth=2)
+        except Exception:
             pass
         
         ax.set_xlabel(col1)
@@ -539,7 +538,6 @@ def sanitize_for_json(obj):
     - Converts NaN/Infinity to None
     - Converts numpy types to Python native types
     """
-    import math
     if isinstance(obj, float):
         if math.isnan(obj) or math.isinf(obj):
             return None

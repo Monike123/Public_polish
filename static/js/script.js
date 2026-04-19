@@ -286,7 +286,7 @@ function handleChatInput() {
 
     // Smart Response Logic
     setTimeout(() => {
-        let response = "I'm not sure about that. Try asking about specific column statistics.";
+        let response = "I'm not sure about that. Try asking about specific column statistics, or type <b>help</b>.";
 
         if (data) {
             const lowerMsg = msg.toLowerCase();
@@ -298,21 +298,32 @@ function handleChatInput() {
             if (targetCol) {
                 // Specific column questions
                 if (lowerMsg.includes('mean') || lowerMsg.includes('average')) {
-                    response = targetCol.describe && targetCol.describe.mean
+                    response = targetCol.describe && targetCol.describe.mean != null
                         ? `The average (mean) of <b>${targetCol.name}</b> is <b>${formatNumber(targetCol.describe.mean)}</b>.`
                         : `<b>${targetCol.name}</b> is categorical, so it has no numerical average.`;
                 } else if (lowerMsg.includes('max') || lowerMsg.includes('highest')) {
-                    response = targetCol.describe && targetCol.describe.max
+                    response = targetCol.describe && targetCol.describe.max != null
                         ? `The maximum value in <b>${targetCol.name}</b> is <b>${formatNumber(targetCol.describe.max)}</b>.`
-                        : `Max value check failed.`;
+                        : `Max value not available for <b>${targetCol.name}</b>.`;
                 } else if (lowerMsg.includes('min') || lowerMsg.includes('lowest')) {
-                    response = targetCol.describe && targetCol.describe.min
+                    response = targetCol.describe && targetCol.describe.min != null
                         ? `The minimum value in <b>${targetCol.name}</b> is <b>${formatNumber(targetCol.describe.min)}</b>.`
-                        : `Min value check failed.`;
+                        : `Min value not available for <b>${targetCol.name}</b>.`;
+                } else if (lowerMsg.includes('std') || lowerMsg.includes('deviation')) {
+                    response = targetCol.describe && targetCol.describe.std != null
+                        ? `Standard deviation of <b>${targetCol.name}</b> is <b>${formatNumber(targetCol.describe.std)}</b>.`
+                        : `Std dev not available for <b>${targetCol.name}</b>.`;
+                } else if (lowerMsg.includes('median') || lowerMsg.includes('50%')) {
+                    response = targetCol.describe && targetCol.describe['50%'] != null
+                        ? `Median (50th percentile) of <b>${targetCol.name}</b> is <b>${formatNumber(targetCol.describe['50%'])}</b>.`
+                        : `Median not available for <b>${targetCol.name}</b>.`;
                 } else if (lowerMsg.includes('unique') || lowerMsg.includes('distinct')) {
                     response = `<b>${targetCol.name}</b> has <b>${targetCol.unique}</b> unique values.`;
+                } else if (lowerMsg.includes('missing') || lowerMsg.includes('null')) {
+                    response = `<b>${targetCol.name}</b> has <b>${targetCol.missing}</b> missing values.`;
+                } else if (lowerMsg.includes('type') || lowerMsg.includes('dtype')) {
+                    response = `<b>${targetCol.name}</b> is <b>${targetCol.type}</b> (dtype: ${targetCol.dtype}).`;
                 } else if (lowerMsg.includes('describe') || lowerMsg.includes('stats') || lowerMsg.includes('summary')) {
-                    // Full describe
                     if (targetCol.describe) {
                         response = `<b>Statistics for ${targetCol.name}:</b><br><ul class="mb-0 text-start ps-3">`;
                         for (const [k, v] of Object.entries(targetCol.describe)) {
@@ -323,18 +334,46 @@ function handleChatInput() {
                         response = `Basic stats for <b>${targetCol.name}</b>: Missing: ${targetCol.missing}, Unique: ${targetCol.unique}.`;
                     }
                 } else {
-                    response = `I found column <b>${targetCol.name}</b>. You can ask me for its mean, max, min, or full description!`;
+                    response = `I found column <b>${targetCol.name}</b>. Ask me for its mean, max, min, std, median, or full description!`;
                 }
             } else {
                 // General questions
-                if (lowerMsg.includes('missing')) {
-                    response = `The dataset has <b>${data.analysis.missing_cells}</b> missing values in total.`;
-                } else if (lowerMsg.includes('rows') || lowerMsg.includes('count')) {
-                    response = `The dataset has <b>${data.original_shape[0]}</b> rows.`;
+                if (lowerMsg.includes('help')) {
+                    response = `<b>Available queries:</b><ul class="mb-0 ps-3">
+                        <li>"mean/average of [column]"</li>
+                        <li>"max/min of [column]"</li>
+                        <li>"std of [column]"</li>
+                        <li>"median of [column]"</li>
+                        <li>"describe [column]"</li>
+                        <li>"missing values"</li>
+                        <li>"rows" / "columns"</li>
+                        <li>"quality score"</li>
+                        <li>"correlations"</li>
+                        <li>"outliers"</li>
+                        </ul>`;
+                } else if (lowerMsg.includes('missing')) {
+                    response = `The dataset has <b>${data.analysis.missing_cells}</b> missing values total.`;
+                } else if (lowerMsg.includes('rows') || lowerMsg.includes('count') || lowerMsg.includes('shape')) {
+                    response = `Dataset shape: <b>${data.original_shape[0]}</b> rows × <b>${data.original_shape[1]}</b> columns.`;
+                } else if (lowerMsg.includes('quality') || lowerMsg.includes('score')) {
+                    response = `Data Quality Score: <b>${data.analysis.quality_score}/100</b>.`;
+                } else if (lowerMsg.includes('columns') || lowerMsg.includes('features')) {
+                    const names = columns.map(c => c.name).join(', ');
+                    response = `<b>${columns.length} columns:</b> ${names}`;
+                } else if (lowerMsg.includes('correlation')) {
+                    const insights = data.analysis.smart_insights || [];
+                    const corrInsight = insights.find(i => i.title && i.title.includes('Relationship'));
+                    response = corrInsight ? corrInsight.content : 'No strong correlations (>0.7) detected.';
+                } else if (lowerMsg.includes('outlier')) {
+                    const insights = data.analysis.smart_insights || [];
+                    const outInsight = insights.find(i => i.title && i.title.includes('Anomal'));
+                    response = outInsight ? outInsight.content : 'No significant distribution anomalies detected.';
+                } else if (lowerMsg.includes('duplicate')) {
+                    response = `Dataset has <b>${data.analysis.duplicate_rows}</b> duplicate rows.`;
                 }
             }
         } else {
-            response = "Error: Data context not found. Please reload the analysis.";
+            response = "Error: Data context not found. Reload analysis.";
         }
 
         history.innerHTML += `

@@ -14,7 +14,7 @@ import shutil
 logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'
+app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24).hex())
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
 
 # Configuration - organized folder structure
@@ -150,15 +150,7 @@ def intermediate_cleaning_simple(df):
         app.logger.error(f"Error in intermediate cleaning: {str(e)}")
         raise
 
-# app.py - replace create_simple_analysis with this
-import pandas as pd
-import numpy as np
-import math
-from scipy import stats as _stats  # if scipy available; optional fallback below
-
-import analysis  # Import the analysis module
-
-# ... (Previous imports kept if needed, but create_simple_analysis is removed)
+import analysis  # Analysis module
 
 @app.route('/')
 def index():
@@ -289,16 +281,10 @@ def process_dataset_organized(file_path, original_filename, cleaned_folder, anal
         if len(df.columns) == 0:
             raise Exception("No columns found in dataset")
         
-        # Clean data
         # 1. Basic Cleaning
-        df_basic = basic_cleaning_simple(df.copy()) # Using simple logic within app.py or from data_cleaning? 
-        # Ideally we should use data_cleaning.basic_cleaning too, but let's stick to what's available or import it.
-        # The user file 'data_cleaning.py' has 'basic_cleaning'. 'app.py' has 'basic_cleaning_simple'.
-        # Let's switch to using the imported data_cleaning module for consistency if possible, but
-        # basic_cleaning_simple is defined in app.py. I'll stick to basic_cleaning_simple for now to minimize risk errors,
-        # OR better: use data_cleaning.intermediate_cleaning which I JUST REFACTORED.
+        df_basic = basic_cleaning_simple(df.copy())
         
-        # Wait, I need to call the NEW intermediate_cleaning from data_cleaning.py
+        # 2. Intermediate Cleaning (Advanced)
         from data_cleaning import intermediate_cleaning
         
         # 2. Intermediate Cleaning (Advanced)

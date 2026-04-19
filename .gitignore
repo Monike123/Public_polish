@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project output (generated at runtime)
+results/
+debug_uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Packages
+*.zip
+*.tar.gz
+
+# Logs
+*.log

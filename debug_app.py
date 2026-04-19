@@ -275,12 +275,16 @@ def debug_process_dataset(file_path, original_filename):
 @app.route('/download/<path:filepath>')
 def download_file(filepath):
     try:
-        if os.path.exists(filepath):
-            return send_file(filepath, as_attachment=True)
+        # Prevent path traversal — only serve files from UPLOAD_FOLDER
+        safe_path = os.path.normpath(os.path.join(UPLOAD_FOLDER, os.path.basename(filepath)))
+        if not safe_path.startswith(os.path.abspath(UPLOAD_FOLDER)):
+            return jsonify({'error': 'Access denied'}), 403
+        if os.path.exists(safe_path):
+            return send_file(safe_path, as_attachment=True)
         else:
-            return jsonify({'error': 'File not found'})
+            return jsonify({'error': 'File not found'}), 404
     except Exception as e:
-        return jsonify({'error': str(e)})
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     print("Starting debug Flask app...")

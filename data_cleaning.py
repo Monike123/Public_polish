@@ -182,4 +182,4 @@ def intermediate_cleaning(df, scale_numeric=True, encode_categorical=True, handl
     except Exception as e:
         print(f"Error in intermediate_cleaning: {str(e)}")
         # Return original data and empty report if cleaning fails
-        return basic_cleaning(df), {"error": str(e)}
+        return basic_cleaning(df), {"error": str(e), "final_shape": df.shape}
