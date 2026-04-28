@@ -249,10 +249,8 @@ Sanitized Data → EDA Engine → Chart Generation → Smart Insights
 # Output Phase
 Clean Data + Charts + Insights → ZIP Package → Download
 ```
-```
 <img width="2968" height="2704" alt="diagram" src="https://github.com/user-attachments/assets/1379f3d3-84d5-4fe7-8d76-b6cb18b3a28a" />
 
-```
 ---
 
 ## 🚀 Quick Start
